@@ -1,22 +1,42 @@
 {
   "name": "@kx501/koishi-plugin-multi-quiz",
   "description": "多类型答题插件",
-  "version": "0.0.1",
+  "version": "1.0.0-beta0",
   "main": "lib/index.js",
   "typings": "lib/index.d.ts",
   "files": [
     "lib",
     "dist"
   ],
+  "contributors": [
+    "kx501 <x501@foxmail.com>"
+  ],
+  "homepage": "https://github.com/Kx501/koishi-plugin-multi-quiz",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Kx501/koishi-plugin-multi-quiz.git"
+  },
   "license": "MIT",
-  "scripts": {},
   "keywords": [
     "chatbot",
     "koishi",
-    "plugin"
+    "plugin",
+    "quiz",
+    "api"
   ],
-  "devDependencies": {},
   "peerDependencies": {
     "koishi": "^4.17.11"
+  },
+  "koishi": {
+    "service": {
+      "required": [
+        "http"
+      ],
+      "optional": [
+        "monetary"
+      ]
+    },
+    "preview": true,
+    "hidden": true
   }
 }
