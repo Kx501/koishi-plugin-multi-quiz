@@ -16,25 +16,25 @@ export function apply(ctx: Context, config: Config) {
   const MAX_CALLS = config.maxCall;
   const timeout = config.timeout;
 
-  let callCounts = {
-    诗趣: Array(config.commonKeys.length).fill(0),
-    百科: Array(config.commonKeys.length).fill(0),
-    竞答: Array(config.commonKeys.length).fill(0),
-    判断: Array(config.commonKeys.length).fill(0),
-    填诗: Array(config.commonKeys.length).fill(0),
-    成语: Array(config.commonKeys.length).fill(0),
-    谜语: Array(config.commonKeys.length).fill(0),
-    灯谜: Array(config.commonKeys.length).fill(0),
-    字谜: Array(config.commonKeys.length).fill(0),
-    烧脑: Array(config.commonKeys.length).fill(0)
-  };
+  let callCounts = {};
+  let apiKeys = {};
 
-  let apiKeys = config.commonKeys;
+  config.keysDict.forEach((entry, index) => {
+    entry.questionTypes.forEach(type => {
+      if (!callCounts[type]) {
+        callCounts[type] = [];
+        apiKeys[type] = [];
+      }
+      callCounts[type][index] = 0;
+      apiKeys[type][index] = entry.key;
+    });
+  });
 
   async function fetchQuestion(type: string) {
     const counts = callCounts[type];
+    const keys = apiKeys[type];
 
-    if (apiKeys.length === 0) return null; // 跳过为空的列表
+    if (keys.length === 0) return null; // 跳过为空的列表
 
     let index = counts.findIndex((count: number) => count < MAX_CALLS);
 
@@ -42,16 +42,17 @@ export function apply(ctx: Context, config: Config) {
 
     let url: string;
 
-    if (type === '诗趣') url = `https://apis.tianapi.com/scwd/index?key=${apiKeys[index]}`;
-    else if (type === '百科') url = `https://apis.tianapi.com/baiketiku/index?key=${apiKeys[index]}`;
-    else if (type === '竞答') url = `https://apis.tianapi.com/wenda/index?key=${apiKeys[index]}`;
-    else if (type === '判断') url = `https://apis.tianapi.com/decide/index?key=${apiKeys[index]}`;
-    else if (type === '填诗') url = `https://apis.tianapi.com/duishici/index?key=${apiKeys[index]}`;
-    else if (type === '成语') url = `https://apis.tianapi.com/caichengyu/index?key=${apiKeys[index]}`;
-    else if (type === '谜语') url = `https://apis.tianapi.com/riddle/index?key=${apiKeys[index]}`;
-    else if (type === '灯谜') url = `https://apis.tianapi.com/caizimi/index?key=${apiKeys[index]}`;
-    else if (type === '字谜') url = `https://apis.tianapi.com/zimi/index?key=${apiKeys[index]}`;
-    else if (type === '烧脑') url = `https://apis.tianapi.com/naowan/index?key=${apiKeys[index]}`;
+    if (type === '诗趣') url = `https://apis.tianapi.com/scwd/index?key=${keys[index]}`;
+    else if (type === '百科') url = `https://apis.tianapi.com/baiketiku/index?key=${keys[index]}`;
+    else if (type === '竞答') url = `https://apis.tianapi.com/wenda/index?key=${keys[index]}`;
+    else if (type === '判断') url = `https://apis.tianapi.com/decide/index?key=${keys[index]}`;
+    else if (type === '填诗') url = `https://apis.tianapi.com/duishici/index?key=${keys[index]}`;
+    else if (type === '成语') url = `https://apis.tianapi.com/caichengyu/index?key=${keys[index]}`;
+    else if (type === '谜语') url = `https://apis.tianapi.com/riddle/index?key=${keys[index]}`;
+    else if (type === '灯谜') url = `https://apis.tianapi.com/caizimi/index?key=${keys[index]}`;
+    else if (type === '字谜') url = `https://apis.tianapi.com/zimi/index?key=${keys[index]}`;
+    else if (type === '烧脑') url = `https://apis.tianapi.com/naowan/index?key=${keys[index]}`;
+    else if (type === '广告') url = `https://apis.tianapi.com/slogan/index?key=${keys[index]}`;
     else throw new Error(`Unknown question type: ${type}`);
 
     const response = (await ctx.http('POST', url)).data;
@@ -59,14 +60,14 @@ export function apply(ctx: Context, config: Config) {
     if (response.code === 200) {
       counts[index]++;
       return response.result;
-    } else if (response.code === 150) counts[index] = config.maxCall;
+    } else if (response.code === 150) counts[index] = MAX_CALLS;
     throw new Error(`API error: ${response.msg}`);
   }
 
   ctx.command('quiz', '随机答题')
     .alias('答题')
     .action(async ({ session }) => {
-      const types = config.questionTypes;
+      const types = Object.keys(callCounts);
       for (let i = 0; i < types.length; i++) {
         const randomType = types[Math.floor(Math.random() * types.length)];
         const question = await fetchQuestion(randomType);
@@ -190,6 +191,17 @@ export function apply(ctx: Context, config: Config) {
       else return '会话超时';
     });
 
+  ctx.command('quiz').subcommand('advertisement', '猜产品')
+    .alias('广告')
+    .action(async ({ session }) => {
+      const question = await fetchQuestion('广告');
+      if (!question) return '暂时没有可用的广告题目，请稍后再试。';
+      session.send(formatQuestion('广告', question));
+      const userAnswer = await session.prompt(timeout);
+      if (userAnswer) await verifyAnswer(session, '广告', question, userAnswer);
+      else return '会话超时';
+    });
+
   function formatQuestion(type: string, question: any) {
     if (type === '诗趣') return `【诗趣】: ${question.question}\nA: ${question.answer_a}\nB: ${question.answer_b}\nC: ${question.answer_c}`;
     else if (type === '百科') return `【百科】: ${question.title}\nA: ${question.answerA}\nB: ${question.answerB}\nC: ${question.answerC}\nD: ${question.answerD}`;
@@ -201,6 +213,7 @@ export function apply(ctx: Context, config: Config) {
     else if (type === '灯谜') return `【灯谜】: ${question.riddle} (${question.type})`;
     else if (type === '字谜') return `【字谜】: ${question.content}`;
     else if (type === '烧脑') return `【烧脑】: ${question.list[0].quest}`;
+    else if (type === '广告') return `【广告】: ${question.content}`;
     else return 'Unknown question type';
   }
 
@@ -208,10 +221,16 @@ export function apply(ctx: Context, config: Config) {
     let isCorrect = false;
 
     if (type === '判断') isCorrect = (userAnswer === '对' && question.answer === 1) || (userAnswer === '错' && question.answer === 0);
-    else if (type === '烧脑') isCorrect = userAnswer?.includes(question.result);
+    else if (type === '烧脑') {
+      const correctAnswer = question.list[0].result;
+      const distance = levenshteinDistance(userAnswer, correctAnswer);
+      const maxLength = Math.max(userAnswer.length, correctAnswer.length);
+      const similarity = (maxLength - distance) / maxLength;
+      isCorrect = similarity >= config.similarity;
+    }
     else {
       // 对于其他所有类型，只需要检查 userAnswer 和 question.answer 是否相等
-      const standardTypes = ['诗趣', '百科', '填诗', '成语', '谜语', '灯谜', '字谜', '竞答'];
+      const standardTypes = ['诗趣', '百科', '竞答', '填诗', '成语', '谜语', '灯谜', '字谜', '广告'];
       if (!standardTypes.includes(type)) throw new Error(`Unknown question type: ${type}`);
       isCorrect = userAnswer === (type === '竞答' ? question.result : question.answer);
     }
@@ -247,5 +266,37 @@ export function apply(ctx: Context, config: Config) {
       } else session.send(`很遗憾，回答错误。`);
       session.send(`正确答案是：${correctAnswer}`);
     }
+  }
+
+  function levenshteinDistance(s1: string, s2: string): number {
+    const len1 = s1.length;
+    const len2 = s2.length;
+
+    let matrix = [];
+
+    // 初始化矩阵
+    for (let i = 0; i <= len1; i++) {
+      matrix[i] = [i];
+    }
+    for (let j = 0; j <= len2; j++) {
+      matrix[0][j] = j;
+    }
+
+    // 填充矩阵
+    for (let i = 1; i <= len1; i++) {
+      for (let j = 1; j <= len2; j++) {
+        if (s1.charAt(i - 1) === s2.charAt(j - 1)) {
+          matrix[i][j] = matrix[i - 1][j - 1];
+        } else {
+          matrix[i][j] = Math.min(
+            matrix[i - 1][j - 1] + 1, // 替换
+            matrix[i][j - 1] + 1,     // 插入
+            matrix[i - 1][j] + 1      // 删除
+          );
+        }
+      }
+    }
+
+    return matrix[len1][len2];
   }
 }
