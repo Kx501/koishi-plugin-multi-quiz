@@ -1,5 +1,5 @@
 import { Schema, Logger } from "koishi";
-import { questionL } from "./lisst";
+import { questionL } from "./list";
 import { time } from "console";
 
 export const log = new Logger('multi-quiz')
