@@ -1,7 +1,7 @@
 {
   "name": "@kx501/koishi-plugin-multi-quiz",
   "description": "多题型答题插件",
-  "version": "1.0.0-beta5",
+  "version": "1.0.0",
   "main": "lib/index.js",
   "typings": "lib/index.d.ts",
   "files": [
