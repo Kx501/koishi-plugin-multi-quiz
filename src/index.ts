@@ -11,7 +11,7 @@ export const name = 'multi-quiz'
 
 export * from './config'
 
-export const usage = `接口使用：[天聚数行|https://www.tianapi.com/]`;
+export const usage = `接口使用：[天聚数行](https://www.tianapi.com/)`;
 export function apply(ctx: Context, config: Config) {
   const MAX_CALLS = config.maxCall;
   const timeout = config.timeout;
