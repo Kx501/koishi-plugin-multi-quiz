@@ -17,16 +17,16 @@ export function apply(ctx: Context, config: Config) {
   const timeout = config.timeout;
 
   let callCounts = {
-    选诗: Array(config.commonKeys.length).fill(0),
+    诗趣: Array(config.commonKeys.length).fill(0),
     百科: Array(config.commonKeys.length).fill(0),
-    问答: Array(config.commonKeys.length).fill(0),
+    竞答: Array(config.commonKeys.length).fill(0),
     判断: Array(config.commonKeys.length).fill(0),
     填诗: Array(config.commonKeys.length).fill(0),
     成语: Array(config.commonKeys.length).fill(0),
     谜语: Array(config.commonKeys.length).fill(0),
     灯谜: Array(config.commonKeys.length).fill(0),
     字谜: Array(config.commonKeys.length).fill(0),
-    脑筋急转弯: Array(config.commonKeys.length).fill(0)
+    烧脑: Array(config.commonKeys.length).fill(0)
   };
 
   let apiKeys = config.commonKeys;
@@ -42,16 +42,16 @@ export function apply(ctx: Context, config: Config) {
 
     let url: string;
 
-    if (type === '选诗') url = `https://apis.tianapi.com/scwd/index?key=${apiKeys[index]}`;
+    if (type === '诗趣') url = `https://apis.tianapi.com/scwd/index?key=${apiKeys[index]}`;
     else if (type === '百科') url = `https://apis.tianapi.com/baiketiku/index?key=${apiKeys[index]}`;
-    else if (type === '问答') url = `https://apis.tianapi.com/wenda/index?key=${apiKeys[index]}`;
+    else if (type === '竞答') url = `https://apis.tianapi.com/wenda/index?key=${apiKeys[index]}`;
     else if (type === '判断') url = `https://apis.tianapi.com/decide/index?key=${apiKeys[index]}`;
     else if (type === '填诗') url = `https://apis.tianapi.com/duishici/index?key=${apiKeys[index]}`;
     else if (type === '成语') url = `https://apis.tianapi.com/caichengyu/index?key=${apiKeys[index]}`;
     else if (type === '谜语') url = `https://apis.tianapi.com/riddle/index?key=${apiKeys[index]}`;
     else if (type === '灯谜') url = `https://apis.tianapi.com/caizimi/index?key=${apiKeys[index]}`;
     else if (type === '字谜') url = `https://apis.tianapi.com/zimi/index?key=${apiKeys[index]}`;
-    else if (type === '脑筋急转弯') url = `https://apis.tianapi.com/naowan/index?key=${apiKeys[index]}`;
+    else if (type === '烧脑') url = `https://apis.tianapi.com/naowan/index?key=${apiKeys[index]}`;
     else throw new Error(`Unknown question type: ${type}`);
 
     const response = (await ctx.http('POST', url)).data;
@@ -59,9 +59,8 @@ export function apply(ctx: Context, config: Config) {
     if (response.code === 200) {
       counts[index]++;
       return response.result;
-    } else {
-      throw new Error(`API error: ${response.msg}`);
-    }
+    } else if (response.code === 150) counts[index] = config.maxCall;
+    throw new Error(`API error: ${response.msg}`);
   }
 
   ctx.command('quiz', '随机答题')
@@ -81,14 +80,14 @@ export function apply(ctx: Context, config: Config) {
       return '暂时没有可用的题目，请稍后再试。';
     });
 
-  ctx.command('quiz').subcommand('poetry', '选诗')
-    .alias('选诗')
+  ctx.command('quiz').subcommand('poetry', '诗词知识竞答')
+    .alias('诗趣')
     .action(async ({ session }) => {
-      const question = await fetchQuestion('选诗');
-      if (!question) return '暂时没有可用的选诗题目，请稍后再试。';
-      session.send(formatQuestion('选诗', question));
+      const question = await fetchQuestion('诗趣');
+      if (!question) return '暂时没有可用的诗趣题目，请稍后再试。';
+      session.send(formatQuestion('诗趣', question));
       const userAnswer = await session.prompt(timeout);
-      if (userAnswer) await verifyAnswer(session, '脑筋急转弯', question, userAnswer);
+      if (userAnswer) await verifyAnswer(session, '诗趣', question, userAnswer.toUpperCase());
       else return '会话超时';
     });
 
@@ -99,18 +98,18 @@ export function apply(ctx: Context, config: Config) {
       if (!question) return '暂时没有可用的百科题目，请稍后再试。';
       session.send(formatQuestion('百科', question));
       const userAnswer = await session.prompt(timeout);
-      if (userAnswer) await verifyAnswer(session, '百科', question, userAnswer);
+      if (userAnswer) await verifyAnswer(session, '百科', question, userAnswer.toUpperCase());
       else return '会话超时';
     });
 
-  ctx.command('quiz').subcommand('qa', '问答')
-    .alias('问答')
+  ctx.command('quiz').subcommand('qa', '知识竞答')
+    .alias('竞答')
     .action(async ({ session }) => {
-      const question = await fetchQuestion('问答');
-      if (!question) return '暂时没有可用的问答题目，请稍后再试。';
-      session.send(formatQuestion('问答', question));
+      const question = await fetchQuestion('竞答');
+      if (!question) return '暂时没有可用的竞答题目，请稍后再试。';
+      session.send(formatQuestion('竞答', question));
       const userAnswer = await session.prompt(timeout);
-      if (userAnswer) await verifyAnswer(session, '问答', question, userAnswer);
+      if (userAnswer) await verifyAnswer(session, '竞答', question, userAnswer);
       else return '会话超时';
     });
 
@@ -151,7 +150,7 @@ export function apply(ctx: Context, config: Config) {
     .alias('谜语')
     .action(async ({ session }) => {
       const question = await fetchQuestion('谜语');
-      if (!question) return '暂时没有可用的谜语题目，请稍后再试。';
+      if (!question) return '暂时没有可用的谜语，请稍后再试。';
       session.send(formatQuestion('谜语', question));
       const userAnswer = await session.prompt(timeout);
       if (userAnswer) await verifyAnswer(session, '谜语', question, userAnswer);
@@ -162,7 +161,7 @@ export function apply(ctx: Context, config: Config) {
     .alias('灯谜')
     .action(async ({ session }) => {
       const question = await fetchQuestion('灯谜');
-      if (!question) return '暂时没有可用的灯谜题目，请稍后再试。';
+      if (!question) return '暂时没有可用的灯谜，请稍后再试。';
       session.send(formatQuestion('灯谜', question));
       const userAnswer = await session.prompt(timeout);
       if (userAnswer) await verifyAnswer(session, '灯谜', question, userAnswer);
@@ -173,7 +172,7 @@ export function apply(ctx: Context, config: Config) {
     .alias('字谜')
     .action(async ({ session }) => {
       const question = await fetchQuestion('字谜');
-      if (!question) return '暂时没有可用的字谜题目，请稍后再试。';
+      if (!question) return '暂时没有可用的字谜，请稍后再试。';
       session.send(formatQuestion('字谜', question));
       const userAnswer = await session.prompt(timeout);
       if (userAnswer) await verifyAnswer(session, '字谜', question, userAnswer);
@@ -181,27 +180,27 @@ export function apply(ctx: Context, config: Config) {
     });
 
   ctx.command('quiz').subcommand('brainteaser', '脑筋急转弯')
-    .alias('脑筋急转弯')
+    .alias('烧脑')
     .action(async ({ session }) => {
-      const question = await fetchQuestion('脑筋急转弯');
+      const question = await fetchQuestion('烧脑');
       if (!question) return '暂时没有可用的脑筋急转弯题目，请稍后再试。';
-      session.send(formatQuestion('脑筋急转弯', question));
+      session.send(formatQuestion('烧脑', question));
       const userAnswer = await session.prompt(timeout);
-      if (userAnswer) await verifyAnswer(session, '脑筋急转弯', question, userAnswer);
+      if (userAnswer) await verifyAnswer(session, '烧脑', question, userAnswer);
       else return '会话超时';
     });
 
   function formatQuestion(type: string, question: any) {
-    if (type === '选诗') return `【选诗】: ${question.question}\nA: ${question.answer_a}\nB: ${question.answer_b}\nC: ${question.answer_c}`;
+    if (type === '诗趣') return `【诗趣】: ${question.question}\nA: ${question.answer_a}\nB: ${question.answer_b}\nC: ${question.answer_c}`;
     else if (type === '百科') return `【百科】: ${question.title}\nA: ${question.answerA}\nB: ${question.answerB}\nC: ${question.answerC}\nD: ${question.answerD}`;
-    else if (type === '问答') return `【问答】: ${question.quest}`;
+    else if (type === '竞答') return `【竞答】: ${question.quest}`;
     else if (type === '判断') return `【判断】: ${question.title}`;
     else if (type === '填诗') return `【填诗】: ${question.quest}`;
-    else if (type === '成语') return `【成语】: ${question.question}\nAbbr: ${question.abbr}`;
+    else if (type === '成语') return `【成语】: ${question.question}`;
     else if (type === '谜语') return `【谜语】: ${question.quest}`;
-    else if (type === '灯谜') return `【灯谜】: ${question.riddle}`;
+    else if (type === '灯谜') return `【灯谜】: ${question.riddle} (${question.type})`;
     else if (type === '字谜') return `【字谜】: ${question.content}`;
-    else if (type === '脑筋急转弯') return `【脑筋急转弯】: ${question.quest}`;
+    else if (type === '烧脑') return `【烧脑】: ${question.list[0].quest}`;
     else return 'Unknown question type';
   }
 
@@ -209,12 +208,12 @@ export function apply(ctx: Context, config: Config) {
     let isCorrect = false;
 
     if (type === '判断') isCorrect = (userAnswer === '对' && question.answer === 1) || (userAnswer === '错' && question.answer === 0);
-    else if (type === '脑筋急转弯') isCorrect = userAnswer.includes(question.result);
+    else if (type === '烧脑') isCorrect = userAnswer?.includes(question.result);
     else {
       // 对于其他所有类型，只需要检查 userAnswer 和 question.answer 是否相等
-      const standardTypes = ['选诗', '百科', '填诗', '成语', '谜语', '灯谜', '字谜', '问答'];
+      const standardTypes = ['诗趣', '百科', '填诗', '成语', '谜语', '灯谜', '字谜', '竞答'];
       if (!standardTypes.includes(type)) throw new Error(`Unknown question type: ${type}`);
-      isCorrect = userAnswer === (type === '问答' ? question.result : question.answer);
+      isCorrect = userAnswer === (type === '竞答' ? question.result : question.answer);
     }
 
     if (isCorrect) {
@@ -227,12 +226,13 @@ export function apply(ctx: Context, config: Config) {
     }
     else {
       let correctAnswer = question.answer;
-      if (type === '判断') correctAnswer = question.answer === 1 ? '对' : '错';
-      else if (type === '填诗') correctAnswer = `${question.answer} (来源: ${question.source})`;
-      else if (type === '成语') correctAnswer = `${question.answer} (拼音: ${question.pinyin})`;
-      else if (type === '灯谜') correctAnswer = `${question.answer} (分类: ${question.type})`;
-      else if (type === '字谜') correctAnswer = `${question.answer} (解释: ${question.reason})`;
-      else if (type === '脑筋急转弯') correctAnswer = question.result;
+      if (type === '诗趣') correctAnswer = `${question.answer}\n【解析】: ${question.analytic}`;
+      else if (type === '竞答') correctAnswer = question.result;
+      else if (type === '判断') correctAnswer = question.answer === 1 ? '对' : '错';
+      else if (type === '填诗') correctAnswer = `${question.answer}\n【出处】: ${question.source}`;
+      else if (type === '成语') correctAnswer = `${question.answer}（注音: ${question.pinyin}）\n【出处】: ${question.source}`;
+      else if (type === '字谜') correctAnswer = `${question.answer}\n【解释】: ${question.reason}`;
+      else if (type === '烧脑') correctAnswer = question.list[0].result;
 
       if (ctx.monetary && config.balance?.enable) {
         let userAid: number;
