@@ -89,7 +89,7 @@ export function apply(ctx: Context, config: Config) {
     .alias('抢答')
     .action(async ({ session }) => {
       if (gameStarted) return '抢答游戏已经在进行中，请等待当前游戏结束。';
-
+      session.send('发送结束立即停止');
       gameStarted = true;
       while (gameStarted) {
         const randomType = Random.pick(questionL);
@@ -111,6 +111,12 @@ export function apply(ctx: Context, config: Config) {
         await new Promise<void>((resolve) => {
           ctx.middleware(async (session, next) => {
             const userAnswer = session.content;
+            if (userAnswer === '结束') {
+              clearTimeout(timer);
+              resolve();
+              session.send('答题已结束');
+              return next();
+            }
             const isCorrect = await verifyAnswer(session, randomType, currentQuestion, userAnswer);
             if (isCorrect) {
               clearTimeout(timer);
