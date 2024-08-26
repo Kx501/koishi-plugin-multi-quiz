@@ -1,4 +1,4 @@
-import { capitalize, Context, Random, Session } from 'koishi'
+import { capitalize, Context, Random, Session, sleep } from 'koishi'
 import { Config, log } from './config'
 import { formatQuestion } from './utils'
 import { } from 'koishi-plugin-monetary'
@@ -91,7 +91,6 @@ export function apply(ctx: Context, config: Config) {
       if (gameStarted) return '抢答游戏已经在进行中，请等待当前游戏结束。';
 
       gameStarted = true;
-      let isCorrect = false;
       while (gameStarted) {
         const randomType = Random.pick(questionL);
         currentQuestion = await fetchQuestion(randomType);
@@ -111,16 +110,14 @@ export function apply(ctx: Context, config: Config) {
 
         await new Promise<void>((resolve) => {
           ctx.middleware(async (session, next) => {
-            let hasProcessed = false;
             const userAnswer = session.content;
-            if (!hasProcessed) isCorrect = await verifyAnswer(session, randomType, currentQuestion, userAnswer);
+            const isCorrect = await verifyAnswer(session, randomType, currentQuestion, userAnswer);
             if (isCorrect) {
               clearTimeout(timer);
               resolve();
-              hasProcessed = true;
               return next();
             }
-            hasProcessed = true;
+            sleep(200);
             return next();
           });
         });
