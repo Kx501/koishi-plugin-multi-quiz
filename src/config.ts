@@ -28,7 +28,7 @@ export const Config: Schema<Config> = Schema.intersect([
             Schema.union([
                 Schema.object({
                     enable: Schema.const(true).required(),
-                    much: Schema.number().role('range', [0, 100]).step(1).description('奖励额度'),
+                    much: Schema.number().min(0).max(100).step(1).description('奖励额度'),
                 }),
                 Schema.object({}),
             ]),
