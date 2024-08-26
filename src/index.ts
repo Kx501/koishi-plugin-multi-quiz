@@ -228,26 +228,22 @@ export function apply(ctx: Context, config: Config) {
   async function verifyAnswer(session: Session, type: string, question: any, userAnswer: string) {
     let isCorrect = false;
 
-    if (type === '选诗') isCorrect = userAnswer === question.answer;
-    else if (type === '百科') isCorrect = userAnswer === question.answer;
-    else if (type === '填诗') isCorrect = userAnswer === question.answer;
-    else if (type === '成语') isCorrect = userAnswer === question.answer;
-    else if (type === '谜语') isCorrect = userAnswer === question.answer;
-    else if (type === '灯谜') isCorrect = userAnswer === question.answer;
-    else if (type === '字谜') isCorrect = userAnswer === question.answer;
-    else if (type === '问答') isCorrect = userAnswer === question.result;
-    else if (type === '判断') isCorrect = (userAnswer === '对' && question.answer === 1) || (userAnswer === '错' && question.answer === 0);
+    if (type === '判断') isCorrect = (userAnswer === '对' && question.answer === 1) || (userAnswer === '错' && question.answer === 0);
     else if (type === '脑筋急转弯') isCorrect = userAnswer.includes(question.result);
-    else throw new Error(`Unknown question type: ${type}`);
+    else {
+      // 对于其他所有类型，只需要检查 userAnswer 和 question.answer 是否相等
+      const standardTypes = ['选诗', '百科', '填诗', '成语', '谜语', '灯谜', '字谜', '问答'];
+      if (!standardTypes.includes(type)) throw new Error(`Unknown question type: ${type}`);
+      isCorrect = userAnswer === (type === '问答' ? question.result : question.answer);
+    }
 
     if (isCorrect) {
       if (ctx.monetary && config.balance?.enable) {
         let userAid: number;
         userAid = (await ctx.database.get('binding', { pid: [session.userId] }, ['aid']))[0]?.aid;
         ctx.monetary.gain(userAid, config.balance.much);
-      }
-
-      session.send('恭喜你，回答正确！');
+        session.send(`恭喜你，回答正确！积分 +${config.balance.much}`);
+      } else session.send('恭喜你，回答正确！');
     }
     else {
       let correctAnswer = question.answer;
@@ -257,7 +253,18 @@ export function apply(ctx: Context, config: Config) {
       else if (type === '灯谜') correctAnswer = `${question.answer} (分类: ${question.type})`;
       else if (type === '字谜') correctAnswer = `${question.answer} (解释: ${question.reason})`;
       else if (type === '脑筋急转弯') correctAnswer = question.result;
-      session.send(`很遗憾，回答错误。正确答案是：${correctAnswer}`);
+
+      if (ctx.monetary && config.balance?.enable) {
+        let userAid: number;
+        userAid = (await ctx.database.get('binding', { pid: [session.userId] }, ['aid']))[0]?.aid;
+        let balance = (await ctx.database.get('monetary', { uid: userAid }, ['value']))[0]?.value;
+        // 检查余额是否足够，如果不足或未定义，则不扣除并返回提示信息
+        if (balance === undefined) ctx.monetary.gain(userAid, 0);
+        if (balance >= config.balance.reduce) {
+          ctx.monetary.cost(userAid, config.balance.much);
+        }
+      } else session.send(`很遗憾，回答错误。`);
+      session.send(`正确答案是：${correctAnswer}`);
     }
   }
 }

@@ -11,6 +11,7 @@ export interface Config {
     balance: {
         enable?: boolean
         much?: number
+        reduce?: number
     }
 }
 
@@ -27,7 +28,8 @@ export const Config: Schema<Config> = Schema.intersect([
             Schema.union([
                 Schema.object({
                     enable: Schema.const(true).required(),
-                    much: Schema.number().description('奖励额度'),
+                    add: Schema.number().description('奖励额度'),
+                    reduce: Schema.number().description('惩罚额度'),
                 }),
                 Schema.object({}),
             ]),
