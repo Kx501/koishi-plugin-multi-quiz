@@ -74,154 +74,134 @@ export function apply(ctx: Context, config: Config) {
         if (question) {
           session.send(formatQuestion(randomType, question));
           const userAnswer = await session.prompt(timeout);
-          await verifyAnswer(session, randomType, question, userAnswer);
-          return;
+          if (userAnswer) return await verifyAnswer(session, randomType, question, userAnswer);
+          else return '会话超时';
         }
       }
-      session.send('暂时没有可用的题目，请稍后再试。');
+      return '暂时没有可用的题目，请稍后再试。';
     });
 
   ctx.command('quiz').subcommand('poetry', '选诗')
     .alias('选诗')
     .action(async ({ session }) => {
       const question = await fetchQuestion('选诗');
-      if (!question) {
-        session.send('暂时没有可用的选诗题目，请稍后再试。');
-        return;
-      }
+      if (!question) return '暂时没有可用的选诗题目，请稍后再试。';
       session.send(formatQuestion('选诗', question));
       const userAnswer = await session.prompt(timeout);
-      if (userAnswer !== undefined) await verifyAnswer(session, '脑筋急转弯', question, userAnswer);
+      if (userAnswer) await verifyAnswer(session, '脑筋急转弯', question, userAnswer);
+      else return '会话超时';
     });
 
   ctx.command('quiz').subcommand('trivia', '百科')
     .alias('百科')
     .action(async ({ session }) => {
       const question = await fetchQuestion('百科');
-      if (!question) {
-        session.send('暂时没有可用的百科题目，请稍后再试。');
-        return;
-      }
+      if (!question) return '暂时没有可用的百科题目，请稍后再试。';
       session.send(formatQuestion('百科', question));
       const userAnswer = await session.prompt(timeout);
-      await verifyAnswer(session, '百科', question, userAnswer);
+      if (userAnswer) await verifyAnswer(session, '百科', question, userAnswer);
+      else return '会话超时';
     });
 
   ctx.command('quiz').subcommand('qa', '问答')
     .alias('问答')
     .action(async ({ session }) => {
       const question = await fetchQuestion('问答');
-      if (!question) {
-        session.send('暂时没有可用的问答题目，请稍后再试。');
-        return;
-      }
+      if (!question) return '暂时没有可用的问答题目，请稍后再试。';
       session.send(formatQuestion('问答', question));
       const userAnswer = await session.prompt(timeout);
-      await verifyAnswer(session, '问答', question, userAnswer);
+      if (userAnswer) await verifyAnswer(session, '问答', question, userAnswer);
+      else return '会话超时';
     });
 
   ctx.command('quiz').subcommand('judgment', '判断')
     .alias('判断')
     .action(async ({ session }) => {
       const question = await fetchQuestion('判断');
-      if (!question) {
-        session.send('暂时没有可用的判断题目，请稍后再试。');
-        return;
-      }
+      if (!question) return '暂时没有可用的判断题目，请稍后再试。';
       session.send(formatQuestion('判断', question));
       const userAnswer = await session.prompt(timeout);
-      await verifyAnswer(session, '判断', question, userAnswer);
+      if (userAnswer) await verifyAnswer(session, '判断', question, userAnswer);
+      else return '会话超时';
     });
 
   ctx.command('quiz').subcommand('fillpoetry', '填诗')
     .alias('填诗')
     .action(async ({ session }) => {
       const question = await fetchQuestion('填诗');
-      if (!question) {
-        session.send('暂时没有可用的填诗题目，请稍后再试。');
-        return;
-      }
+      if (!question) return '暂时没有可用的填诗题目，请稍后再试。';
       session.send(formatQuestion('填诗', question));
       const userAnswer = await session.prompt(timeout);
-      await verifyAnswer(session, '填诗', question, userAnswer);
+      if (userAnswer) await verifyAnswer(session, '填诗', question, userAnswer);
+      else return '会话超时';
     });
 
   ctx.command('quiz').subcommand('idiom', '成语')
     .alias('成语')
     .action(async ({ session }) => {
       const question = await fetchQuestion('成语');
-      if (!question) {
-        session.send('暂时没有可用的成语题目，请稍后再试。');
-        return;
-      }
+      if (!question) return '暂时没有可用的成语题目，请稍后再试。';
       session.send(formatQuestion('成语', question));
       const userAnswer = await session.prompt(timeout);
-      await verifyAnswer(session, '成语', question, userAnswer);
+      if (userAnswer) await verifyAnswer(session, '成语', question, userAnswer);
+      else return '会话超时';
     });
 
   ctx.command('quiz').subcommand('riddle', '谜语')
     .alias('谜语')
     .action(async ({ session }) => {
       const question = await fetchQuestion('谜语');
-      if (!question) {
-        session.send('暂时没有可用的谜语题目，请稍后再试。');
-        return;
-      }
+      if (!question) return '暂时没有可用的谜语题目，请稍后再试。';
       session.send(formatQuestion('谜语', question));
       const userAnswer = await session.prompt(timeout);
-      await verifyAnswer(session, '谜语', question, userAnswer);
+      if (userAnswer) await verifyAnswer(session, '谜语', question, userAnswer);
+      else return '会话超时';
     });
 
   ctx.command('quiz').subcommand('lanternriddle', '灯谜')
     .alias('灯谜')
     .action(async ({ session }) => {
       const question = await fetchQuestion('灯谜');
-      if (!question) {
-        session.send('暂时没有可用的灯谜题目，请稍后再试。');
-        return;
-      }
+      if (!question) return '暂时没有可用的灯谜题目，请稍后再试。';
       session.send(formatQuestion('灯谜', question));
       const userAnswer = await session.prompt(timeout);
-      await verifyAnswer(session, '灯谜', question, userAnswer);
+      if (userAnswer) await verifyAnswer(session, '灯谜', question, userAnswer);
+      else return '会话超时';
     });
 
   ctx.command('quiz').subcommand('charpuzzle', '字谜')
     .alias('字谜')
     .action(async ({ session }) => {
       const question = await fetchQuestion('字谜');
-      if (!question) {
-        session.send('暂时没有可用的字谜题目，请稍后再试。');
-        return;
-      }
+      if (!question) return '暂时没有可用的字谜题目，请稍后再试。';
       session.send(formatQuestion('字谜', question));
       const userAnswer = await session.prompt(timeout);
-      await verifyAnswer(session, '字谜', question, userAnswer);
+      if (userAnswer) await verifyAnswer(session, '字谜', question, userAnswer);
+      else return '会话超时';
     });
 
   ctx.command('quiz').subcommand('brainteaser', '脑筋急转弯')
     .alias('脑筋急转弯')
     .action(async ({ session }) => {
       const question = await fetchQuestion('脑筋急转弯');
-      if (!question) {
-        session.send('暂时没有可用的脑筋急转弯题目，请稍后再试。');
-        return;
-      }
+      if (!question) return '暂时没有可用的脑筋急转弯题目，请稍后再试。';
       session.send(formatQuestion('脑筋急转弯', question));
       const userAnswer = await session.prompt(timeout);
-      await verifyAnswer(session, '脑筋急转弯', question, userAnswer);
+      if (userAnswer) await verifyAnswer(session, '脑筋急转弯', question, userAnswer);
+      else return '会话超时';
     });
 
   function formatQuestion(type: string, question: any) {
-    if (type === '选诗') return `Question: ${question.question}\nA: ${question.answer_a}\nB: ${question.answer_b}\nC: ${question.answer_c}`;
-    else if (type === '百科') return `Question: ${question.title}\nA: ${question.answerA}\nB: ${question.answerB}\nC: ${question.answerC}\nD: ${question.answerD}`;
-    else if (type === '问答') return `Question: ${question.quest}`;
-    else if (type === '判断') return `Question: ${question.title}`;
-    else if (type === '填诗') return `Question: ${question.quest}`;
-    else if (type === '成语') return `Question: ${question.question}\nAbbr: ${question.abbr}`;
-    else if (type === '谜语') return `Question: ${question.quest}`;
-    else if (type === '灯谜') return `Question: ${question.riddle}`;
-    else if (type === '字谜') return `Question: ${question.content}`;
-    else if (type === '脑筋急转弯') return `Question: ${question.quest}`;
+    if (type === '选诗') return `【选诗】: ${question.question}\nA: ${question.answer_a}\nB: ${question.answer_b}\nC: ${question.answer_c}`;
+    else if (type === '百科') return `【百科】: ${question.title}\nA: ${question.answerA}\nB: ${question.answerB}\nC: ${question.answerC}\nD: ${question.answerD}`;
+    else if (type === '问答') return `【问答】: ${question.quest}`;
+    else if (type === '判断') return `【判断】: ${question.title}`;
+    else if (type === '填诗') return `【填诗】: ${question.quest}`;
+    else if (type === '成语') return `【成语】: ${question.question}\nAbbr: ${question.abbr}`;
+    else if (type === '谜语') return `【谜语】: ${question.quest}`;
+    else if (type === '灯谜') return `【灯谜】: ${question.riddle}`;
+    else if (type === '字谜') return `【字谜】: ${question.content}`;
+    else if (type === '脑筋急转弯') return `【脑筋急转弯】: ${question.quest}`;
     else return 'Unknown question type';
   }
 
