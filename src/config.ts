@@ -22,7 +22,7 @@ export const Config: Schema<Config> = Schema.intersect([
     Schema.object({
         maxCall: Schema.number().description('每个key最大调用次数').default(100),
         timeout: Schema.number().description('回答限时').default(40000),
-        similarity: Schema.number().description('答案相似度阈值，用于脑筋急转弯判断正误').default(0.8),
+        similarity: Schema.number().step(0.1).default(0.8).description('答案相似度阈值，用于脑筋急转弯判断正误'),
         keysDict: Schema.array(Schema.object({
             key: Schema.string(),
             questionTypes: Schema.array(Schema.union(questionL)).role('select').default(questionL).description('选择的题型'),
