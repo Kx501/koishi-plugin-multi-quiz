@@ -1,6 +1,5 @@
 import { Schema, Logger } from "koishi";
 import { questionL } from "./list";
-import { time } from "console";
 
 export const log = new Logger('multi-quiz')
 
@@ -23,12 +22,12 @@ export const Config: Schema<Config> = Schema.intersect([
         commonKeys: Schema.array(Schema.string()).role('table').description('通用key'),
         balance: Schema.intersect([
             Schema.object({
-                enable: Schema.boolean().default(true).description('启用经济'),
+                enable: Schema.boolean().default(false).description('启用经济'),
             }),
             Schema.union([
                 Schema.object({
                     enable: Schema.const(true).required(),
-                    much: Schema.number().min(0).max(100).step(1).description('奖励额度'),
+                    much: Schema.number().description('奖励额度'),
                 }),
                 Schema.object({}),
             ]),
