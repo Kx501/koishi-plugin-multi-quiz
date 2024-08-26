@@ -1,23 +1,31 @@
-import { Context, Session } from 'koishi'
+import { capitalize, Context, Random, Session } from 'koishi'
 import { Config, log } from './config'
+import { formatQuestion } from './utils'
 import { } from 'koishi-plugin-monetary'
+import { } from 'koishi-plugin-davinci-003'
+import { questionL } from './list';
 
 export const inject = {
   required: ['http'],
-  optional: ['database', 'monetary']
+  optional: ['database', 'monetary', 'dvc']
 }
 
 export const name = 'multi-quiz'
 
 export * from './config'
 
-export const usage = `接口使用：[天聚数行](https://www.tianapi.com/)`;
+export const usage = `接口使用：[天聚数行](https://www.tianapi.com/)\n
+需要dvc服务用于验证脑筋急转弯答案`;
 export function apply(ctx: Context, config: Config) {
   const MAX_CALLS = config.maxCall;
   const timeout = config.timeout;
 
   let callCounts = {};
   let apiKeys = {};
+  let currentQuestion = null;
+  let currentType = null;
+  let gameStarted = false;
+  let timer = null;
 
   config.keysDict.forEach((entry, index) => {
     entry.questionTypes.forEach(type => {
@@ -64,21 +72,59 @@ export function apply(ctx: Context, config: Config) {
     throw new Error(`API error: ${response.msg}`);
   }
 
+
   ctx.command('quiz', '随机答题')
     .alias('答题')
     .action(async ({ session }) => {
-      const types = Object.keys(callCounts);
-      for (let i = 0; i < types.length; i++) {
-        const randomType = types[Math.floor(Math.random() * types.length)];
-        const question = await fetchQuestion(randomType);
-        if (question) {
-          session.send(formatQuestion(randomType, question));
-          const userAnswer = await session.prompt(timeout);
-          if (userAnswer) return await verifyAnswer(session, randomType, question, userAnswer);
-          else return '会话超时';
+      const randomType = Random.pick(questionL);
+      const question = await fetchQuestion(randomType);
+      if (!question) return '暂时没有可用的题目，请稍后再试。';
+      session.send(formatQuestion(randomType, question));
+      const userAnswer = await session.prompt(timeout);
+      if (userAnswer) await verifyAnswer(session, randomType, question, capitalize(userAnswer));
+      else return '会话超时';
+    });
+
+  ctx.command('quiz').subcommand('buzz', '抢答模式')
+    .alias('抢答')
+    .action(async ({ session }) => {
+      if (gameStarted) return '抢答游戏已经在进行中，请等待当前游戏结束。';
+
+      gameStarted = true;
+      let isCorrect = false;
+      while (gameStarted) {
+        const randomType = Random.pick(questionL);
+        currentQuestion = await fetchQuestion(randomType);
+        currentType = randomType;
+
+        if (!currentQuestion) {
+          gameStarted = false;
+          return '暂时没有可用的题目，请稍后再试。';
         }
+
+        session.send(formatQuestion(randomType, currentQuestion));
+
+        timer = setTimeout(() => {
+          session.send('时间到，没有人回答正确。');
+          gameStarted = false;
+        }, timeout);
+
+        await new Promise<void>((resolve) => {
+          ctx.middleware(async (session, next) => {
+            let hasProcessed = false;
+            const userAnswer = session.content;
+            if (!hasProcessed) isCorrect = await verifyAnswer(session, randomType, currentQuestion, userAnswer);
+            if (isCorrect) {
+              clearTimeout(timer);
+              resolve();
+              hasProcessed = true;
+              return next();
+            }
+            hasProcessed = true;
+            return next();
+          });
+        });
       }
-      return '暂时没有可用的题目，请稍后再试。';
     });
 
   ctx.command('quiz').subcommand('poetry', '诗词知识问答')
@@ -88,7 +134,7 @@ export function apply(ctx: Context, config: Config) {
       if (!question) return '暂时没有可用的诗趣题目，请稍后再试。';
       session.send(formatQuestion('诗趣', question));
       const userAnswer = await session.prompt(timeout);
-      if (userAnswer) await verifyAnswer(session, '诗趣', question, userAnswer.toUpperCase());
+      if (userAnswer) await verifyAnswer(session, '诗趣', question, userAnswer);
       else return '会话超时';
     });
 
@@ -99,7 +145,7 @@ export function apply(ctx: Context, config: Config) {
       if (!question) return '暂时没有可用的百科题目，请稍后再试。';
       session.send(formatQuestion('百科', question));
       const userAnswer = await session.prompt(timeout);
-      if (userAnswer) await verifyAnswer(session, '百科', question, userAnswer.toUpperCase());
+      if (userAnswer) await verifyAnswer(session, '百科', question, userAnswer);
       else return '会话超时';
     });
 
@@ -202,34 +248,22 @@ export function apply(ctx: Context, config: Config) {
       else return '会话超时';
     });
 
-  function formatQuestion(type: string, question: any) {
-    if (type === '诗趣') return `【诗趣】: ${question.question}\nA: ${question.answer_a}\nB: ${question.answer_b}\nC: ${question.answer_c}`;
-    else if (type === '百科') return `【百科】: ${question.title}\nA: ${question.answerA}\nB: ${question.answerB}\nC: ${question.answerC}\nD: ${question.answerD}`;
-    else if (type === '竞答') return `【竞答】: ${question.quest}`;
-    else if (type === '判断') return `【判断】: ${question.title}`;
-    else if (type === '填诗') return `【填诗】: ${question.quest}`;
-    else if (type === '成语') return `【成语】: ${question.question}`;
-    else if (type === '谜语') return `【谜语】: ${question.quest}`;
-    else if (type === '灯谜') return `【灯谜】: ${question.riddle} (${question.type})`;
-    else if (type === '字谜') return `【字谜】: ${question.content}`;
-    else if (type === '烧脑') return `【烧脑】: ${question.list[0].quest}`;
-    else if (type === '广告') return `【广告】: ${question.content}`;
-    else return 'Unknown question type';
-  }
 
   async function verifyAnswer(session: Session, type: string, question: any, userAnswer: string) {
     let isCorrect = false;
+    if (type === '百科' || type === '诗趣') userAnswer = capitalize(userAnswer);
 
     if (type === '判断') isCorrect = (userAnswer === '对' && question.answer === 1) || (userAnswer === '错' && question.answer === 0);
     else if (type === '烧脑') {
-      const correctAnswer = question.list[0].result;
-      const distance = levenshteinDistance(userAnswer, correctAnswer);
-      const maxLength = Math.max(userAnswer.length, correctAnswer.length);
-      const similarity = (maxLength - distance) / maxLength;
-      isCorrect = similarity >= config.similarity;
+      if (ctx.dvc) {
+        let dvcTXT = await ctx.dvc.chat_with_gpt([{
+          role: 'system',
+          content: `脑筋急转弯：${question.list[0].quest}\n参考答案：${question.list[0].result}\n用户回答：${userAnswer}\n${config.dvcrole}`
+        }])
+        if (dvcTXT === 'True') isCorrect = true;
+      } else throw new Error('请先安装dvc服务');
     }
     else {
-      // 对于其他所有类型，只需要检查 userAnswer 和 question.answer 是否相等
       const standardTypes = ['诗趣', '百科', '竞答', '填诗', '成语', '谜语', '灯谜', '字谜', '广告'];
       if (!standardTypes.includes(type)) throw new Error(`Unknown question type: ${type}`);
       isCorrect = userAnswer === (type === '竞答' ? question.result : question.answer);
@@ -247,7 +281,7 @@ export function apply(ctx: Context, config: Config) {
       let correctAnswer = question.answer;
       if (type === '诗趣') correctAnswer = `${question.answer}\n【解析】: ${question.analytic}`;
       else if (type === '竞答') correctAnswer = question.result;
-      else if (type === '判断') correctAnswer = question.answer === 1 ? '对' : '错';
+      else if (type === '判断') correctAnswer = (question.answer === 1 ? '对' : '错') + `【解析】: ${question.analyse}`;
       else if (type === '填诗') correctAnswer = `${question.answer}\n【出处】: ${question.source}`;
       else if (type === '成语') correctAnswer = `${question.answer}（注音: ${question.pinyin}）\n【出处】: ${question.source}`;
       else if (type === '字谜') correctAnswer = `${question.answer}\n【解释】: ${question.reason}`;
@@ -257,46 +291,15 @@ export function apply(ctx: Context, config: Config) {
         let userAid: number;
         userAid = (await ctx.database.get('binding', { pid: [session.userId] }, ['aid']))[0]?.aid;
         let balance = (await ctx.database.get('monetary', { uid: userAid }, ['value']))[0]?.value;
-        // 如果不足或未定义，则不扣除
         if (balance === undefined) ctx.monetary.gain(userAid, 0);
         if (balance >= config.balance.reduce) {
           ctx.monetary.cost(userAid, config.balance.reduce);
           session.send(`回答错误，积分 -${config.balance.reduce}`);
         }
       } else session.send(`很遗憾，回答错误。`);
-      session.send(`正确答案是：${correctAnswer}`);
-    }
-  }
-
-  function levenshteinDistance(s1: string, s2: string): number {
-    const len1 = s1.length;
-    const len2 = s2.length;
-
-    let matrix = [];
-
-    // 初始化矩阵
-    for (let i = 0; i <= len1; i++) {
-      matrix[i] = [i];
-    }
-    for (let j = 0; j <= len2; j++) {
-      matrix[0][j] = j;
+      if (!gameStarted) session.send(`正确答案是：${correctAnswer}`);
     }
 
-    // 填充矩阵
-    for (let i = 1; i <= len1; i++) {
-      for (let j = 1; j <= len2; j++) {
-        if (s1.charAt(i - 1) === s2.charAt(j - 1)) {
-          matrix[i][j] = matrix[i - 1][j - 1];
-        } else {
-          matrix[i][j] = Math.min(
-            matrix[i - 1][j - 1] + 1, // 替换
-            matrix[i][j - 1] + 1,     // 插入
-            matrix[i - 1][j] + 1      // 删除
-          );
-        }
-      }
-    }
-
-    return matrix[len1][len2];
+    return isCorrect;
   }
 }

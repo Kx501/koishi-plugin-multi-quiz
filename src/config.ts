@@ -6,7 +6,6 @@ export const log = new Logger('multi-quiz')
 export interface Config {
     maxCall: number
     timeout: number
-    similarity: number
     keysDict: {
         key: string
         questionTypes: string[]
@@ -16,13 +15,13 @@ export interface Config {
         much?: number
         reduce?: number
     }
+    dvcrole: string
 }
 
 export const Config: Schema<Config> = Schema.intersect([
     Schema.object({
-        maxCall: Schema.number().description('每个key最大调用次数').default(100),
-        timeout: Schema.number().description('回答限时').default(40000),
-        similarity: Schema.number().step(0.1).default(0.8).description('答案相似度阈值，用于脑筋急转弯判断正误'),
+        maxCall: Schema.number().default(100).description('每个key最大调用次数'),
+        timeout: Schema.number().default(40000).description('回答限时'),
         keysDict: Schema.array(Schema.object({
             key: Schema.string(),
             questionTypes: Schema.array(Schema.union(questionL)).role('select').default(questionL).description('选择的题型'),
@@ -40,5 +39,6 @@ export const Config: Schema<Config> = Schema.intersect([
                 Schema.object({}),
             ]),
         ]),
+        dvcrole: Schema.string().role('textarea', { rows: [2, 8] }).default('请判断上面用户的回答是否正确，只用回答‘True’或‘False’不要说多余的话').description('dvc角色')
     }).description('基础设置')
 ])

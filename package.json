@@ -1,6 +1,6 @@
 {
   "name": "@kx501/koishi-plugin-multi-quiz",
-  "description": "多题型答题插件",
+  "description": "趣味答题，包括：诗词、成语、谜语、字谜、灯谜、脑筋急转弯、广告......，",
   "version": "1.0.0",
   "main": "lib/index.js",
   "typings": "lib/index.d.ts",
