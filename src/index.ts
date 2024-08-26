@@ -82,7 +82,7 @@ export function apply(ctx: Context, config: Config) {
     });
 
   ctx.command('quiz').subcommand('poetry', '选诗')
-    .alias('诗选')
+    .alias('选诗')
     .action(async ({ session }) => {
       const question = await fetchQuestion('选诗');
       if (!question) {
@@ -91,7 +91,7 @@ export function apply(ctx: Context, config: Config) {
       }
       session.send(formatQuestion('选诗', question));
       const userAnswer = await session.prompt(timeout);
-      await verifyAnswer(session, '选诗', question, userAnswer);
+      if (userAnswer !== undefined) await verifyAnswer(session, '脑筋急转弯', question, userAnswer);
     });
 
   ctx.command('quiz').subcommand('trivia', '百科')
@@ -258,10 +258,11 @@ export function apply(ctx: Context, config: Config) {
         let userAid: number;
         userAid = (await ctx.database.get('binding', { pid: [session.userId] }, ['aid']))[0]?.aid;
         let balance = (await ctx.database.get('monetary', { uid: userAid }, ['value']))[0]?.value;
-        // 检查余额是否足够，如果不足或未定义，则不扣除并返回提示信息
+        // 如果不足或未定义，则不扣除
         if (balance === undefined) ctx.monetary.gain(userAid, 0);
         if (balance >= config.balance.reduce) {
-          ctx.monetary.cost(userAid, config.balance.much);
+          ctx.monetary.cost(userAid, config.balance.reduce);
+          session.send(`回答错误，积分 -${config.balance.reduce}`);
         }
       } else session.send(`很遗憾，回答错误。`);
       session.send(`正确答案是：${correctAnswer}`);
