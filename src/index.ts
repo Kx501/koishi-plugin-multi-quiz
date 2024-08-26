@@ -81,7 +81,7 @@ export function apply(ctx: Context, config: Config) {
       return '暂时没有可用的题目，请稍后再试。';
     });
 
-  ctx.command('quiz').subcommand('poetry', '诗词知识竞答')
+  ctx.command('quiz').subcommand('poetry', '诗词知识问答')
     .alias('诗趣')
     .action(async ({ session }) => {
       const question = await fetchQuestion('诗趣');
