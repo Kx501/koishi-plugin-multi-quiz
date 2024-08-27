@@ -24,6 +24,7 @@ export function apply(ctx: Context, config: Config) {
   let apiKeys = {};
   let currentQuestion = null;
   let currentType = null;
+  let currentAnswer = null;
   let gameStarted = false;
   let timer = null;
 
@@ -108,6 +109,7 @@ export function apply(ctx: Context, config: Config) {
 
       timer = setTimeout(() => {
         session.send('时间到，没有人回答正确。');
+        session.send(currentAnswer);
         gameStarted = false;
       }, timeout);
     });
@@ -298,7 +300,8 @@ export function apply(ctx: Context, config: Config) {
           session.send(`回答错误，积分 -${config.balance.cost}`);
         }
       } else session.send(`很遗憾，回答错误。`);
-      if (!gameStarted) temp答案session.send(`正确答案是：${correctAnswer}`);
+      if (gameStarted) currentAnswer = `正确答案是：${correctAnswer}`;
+      else session.send(`正确答案是：${correctAnswer}`);
     }
 
     return isCorrect;
