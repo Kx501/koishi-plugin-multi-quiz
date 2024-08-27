@@ -85,7 +85,7 @@ export function apply(ctx: Context, config: Config) {
       else return '会话超时';
     });
 
-  ctx.command('quiz').subcommand('buzz', '抢答模式')
+  ctx.command('quiz').subcommand('buzz', '开始抢答')
     .alias('抢答')
     .action(async ({ session }) => {
       if (gameStarted) return '抢答游戏已经在进行中，请等待当前游戏结束。';
@@ -113,7 +113,7 @@ export function apply(ctx: Context, config: Config) {
     });
   }
 
-  ctx.command('answer <answer>', '答题')
+  ctx.command('answer <answer>', '抢答答题')
     .alias('答')
     .action(async ({ session }, answer) => {
       if (!gameStarted || !currentQuestion) return '当前没有进行中的抢答游戏。';
@@ -125,7 +125,7 @@ export function apply(ctx: Context, config: Config) {
       }
     });
 
-  ctx.command('quiz').subcommand('poetry', '诗词知识问答')
+  ctx.command('quiz').subcommand('poetry', '诗词知识')
     .alias('诗趣')
     .action(async ({ session }) => {
       const question = await fetchQuestion('诗趣');
@@ -136,7 +136,7 @@ export function apply(ctx: Context, config: Config) {
       else return '会话超时';
     });
 
-  ctx.command('quiz').subcommand('trivia', '百科')
+  ctx.command('quiz').subcommand('trivia', '趣味百科')
     .alias('百科')
     .action(async ({ session }) => {
       const question = await fetchQuestion('百科');
@@ -158,7 +158,7 @@ export function apply(ctx: Context, config: Config) {
       else return '会话超时';
     });
 
-  ctx.command('quiz').subcommand('judgment', '判断')
+  ctx.command('quiz').subcommand('judgment', '判断题')
     .alias('判断')
     .action(async ({ session }) => {
       const question = await fetchQuestion('判断');
@@ -169,7 +169,7 @@ export function apply(ctx: Context, config: Config) {
       else return '会话超时';
     });
 
-  ctx.command('quiz').subcommand('fillpoetry', '填诗')
+  ctx.command('quiz').subcommand('fillpoetry', '填对诗词')
     .alias('填诗')
     .action(async ({ session }) => {
       const question = await fetchQuestion('填诗');
@@ -180,7 +180,7 @@ export function apply(ctx: Context, config: Config) {
       else return '会话超时';
     });
 
-  ctx.command('quiz').subcommand('idiom', '成语')
+  ctx.command('quiz').subcommand('idiom', '猜成语')
     .alias('成语')
     .action(async ({ session }) => {
       const question = await fetchQuestion('成语');
@@ -191,7 +191,7 @@ export function apply(ctx: Context, config: Config) {
       else return '会话超时';
     });
 
-  ctx.command('quiz').subcommand('riddle', '谜语')
+  ctx.command('quiz').subcommand('riddle', '猜谜语')
     .alias('谜语')
     .action(async ({ session }) => {
       const question = await fetchQuestion('谜语');
@@ -202,7 +202,7 @@ export function apply(ctx: Context, config: Config) {
       else return '会话超时';
     });
 
-  ctx.command('quiz').subcommand('lanternriddle', '灯谜')
+  ctx.command('quiz').subcommand('lanternriddle', '猜灯谜')
     .alias('灯谜')
     .action(async ({ session }) => {
       const question = await fetchQuestion('灯谜');
@@ -213,7 +213,7 @@ export function apply(ctx: Context, config: Config) {
       else return '会话超时';
     });
 
-  ctx.command('quiz').subcommand('charpuzzle', '字谜')
+  ctx.command('quiz').subcommand('charpuzzle', '猜字谜')
     .alias('字谜')
     .action(async ({ session }) => {
       const question = await fetchQuestion('字谜');
@@ -235,7 +235,7 @@ export function apply(ctx: Context, config: Config) {
       else return '会话超时';
     });
 
-  ctx.command('quiz').subcommand('advertisement', '猜产品')
+  ctx.command('quiz').subcommand('advertise', '猜广告产品')
     .alias('广告')
     .action(async ({ session }) => {
       const question = await fetchQuestion('广告');
