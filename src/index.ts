@@ -298,7 +298,7 @@ export function apply(ctx: Context, config: Config) {
           session.send(`回答错误，积分 -${config.balance.cost}`);
         }
       } else session.send(`很遗憾，回答错误。`);
-      if (!gameStarted) session.send(`正确答案是：${correctAnswer}`);
+      if (!gameStarted) temp答案session.send(`正确答案是：${correctAnswer}`);
     }
 
     return isCorrect;
