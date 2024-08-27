@@ -274,8 +274,8 @@ export function apply(ctx: Context, config: Config) {
       if (ctx.monetary && config.balance?.enable) {
         let userAid: number;
         userAid = (await ctx.database.get('binding', { pid: [session.userId] }, ['aid']))[0]?.aid;
-        ctx.monetary.gain(userAid, config.balance.much);
-        session.send(`恭喜你，回答正确！积分 +${config.balance.much}`);
+        ctx.monetary.gain(userAid, config.balance.gain);
+        session.send(`恭喜你，回答正确！积分 +${config.balance.gain}`);
       } else session.send('恭喜你，回答正确！');
     }
     else {
@@ -293,9 +293,9 @@ export function apply(ctx: Context, config: Config) {
         userAid = (await ctx.database.get('binding', { pid: [session.userId] }, ['aid']))[0]?.aid;
         let balance = (await ctx.database.get('monetary', { uid: userAid }, ['value']))[0]?.value;
         if (balance === undefined) ctx.monetary.gain(userAid, 0);
-        if (balance >= config.balance.reduce) {
-          ctx.monetary.cost(userAid, config.balance.reduce);
-          session.send(`回答错误，积分 -${config.balance.reduce}`);
+        if (balance >= config.balance.cost) {
+          ctx.monetary.cost(userAid, config.balance.cost);
+          session.send(`回答错误，积分 -${config.balance.cost}`);
         }
       } else session.send(`很遗憾，回答错误。`);
       if (!gameStarted) session.send(`正确答案是：${correctAnswer}`);
