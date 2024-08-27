@@ -39,6 +39,6 @@ export const Config: Schema<Config> = Schema.intersect([
                 Schema.object({}),
             ]),
         ]),
-        dvcrole: Schema.string().role('textarea', { rows: [2, 8] }).default('请判断上面用户的回答是否正确，只用回答‘True’或‘False’不要说多余的话').description('dvc角色')
+        dvcrole: Schema.string().role('textarea', { rows: [2, 8] }).default('请判断下面用户的回答是否正确，只用回答‘True’或‘False’不要说多余的话').description('dvc角色')
     }).description('基础设置')
 ])

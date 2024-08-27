@@ -90,37 +90,38 @@ export function apply(ctx: Context, config: Config) {
     .action(async ({ session }) => {
       if (gameStarted) return '抢答游戏已经在进行中，请等待当前游戏结束。';
       gameStarted = true;
-      while (gameStarted) {
-        const randomType = Random.pick(questionL);
-        currentQuestion = await fetchQuestion(randomType);
-        currentType = randomType;
+      startBuzzGame(session);
+    });
 
-        if (!currentQuestion) {
-          gameStarted = false;
-          return '暂时没有可用的题目，请稍后再试。';
-        }
+  function startBuzzGame(session: Session) {
+    const randomType = Random.pick(questionL);
+    fetchQuestion(randomType).then(question => {
+      if (!question) {
+        gameStarted = false;
+        session.send('暂时没有可用的题目，请稍后再试。');
+        return;
+      }
 
-        session.send(formatQuestion(randomType, currentQuestion));
+      currentQuestion = question;
+      currentType = randomType;
+      session.send(formatQuestion(randomType, question));
 
-        timer = setTimeout(() => {
-          session.send('时间到，没有人回答正确。');
-          gameStarted = false;
-        }, timeout);
+      timer = setTimeout(() => {
+        session.send('时间到，没有人回答正确。');
+        gameStarted = false;
+      }, timeout);
+    });
+  }
 
-        await new Promise<void>((resolve) => {
-          ctx.middleware(async (session, next) => {
-            const userAnswer = session.content;
-            const isCorrect = await verifyAnswer(session, randomType, currentQuestion, userAnswer);
-            if (isCorrect) {
-              clearTimeout(timer);
-              resolve();
-              return next();
-            } else {
-              sleep(200);
-              return next();
-            }
-          });
-        });
+  ctx.command('answer <answer>', '答题')
+    .alias('答')
+    .action(async ({ session }, answer) => {
+      if (!gameStarted || !currentQuestion) return '当前没有进行中的抢答游戏。';
+      const isCorrect = await verifyAnswer(session, currentType, currentQuestion, answer);
+      if (isCorrect) {
+        clearTimeout(timer);
+        // 进入下一次循环
+        startBuzzGame(session);
       }
     });
 
@@ -255,7 +256,10 @@ export function apply(ctx: Context, config: Config) {
       if (ctx.dvc) {
         let dvcTXT = await ctx.dvc.chat_with_gpt([{
           role: 'system',
-          content: `脑筋急转弯：${question.list[0].quest}\n参考答案：${question.list[0].result}\n用户回答：${userAnswer}\n${config.dvcrole}`
+          content: `${config.dvcrole}`
+        }, {
+          role: 'user',
+          content: `脑筋急转弯：${question.list[0].quest}\n参考答案：${question.list[0].result}\n用户回答：${userAnswer}`
         }])
         if (dvcTXT === 'True') isCorrect = true;
       } else throw new Error('请先安装dvc服务');
