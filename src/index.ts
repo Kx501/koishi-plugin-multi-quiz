@@ -113,7 +113,7 @@ export function apply(ctx: Context, config: Config) {
     });
   }
 
-  ctx.command('answer <answer>', '抢答答题')
+  ctx.command('quiz').subcommand('answer <answer>', '抢答答题')
     .alias('答')
     .action(async ({ session }, answer) => {
       if (!gameStarted || !currentQuestion) return '当前没有进行中的抢答游戏。';
