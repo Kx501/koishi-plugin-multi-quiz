@@ -298,7 +298,7 @@ export function apply(ctx: Context, config: Config) {
         if (balance >= config.balance.cost) {
           ctx.monetary.cost(userAid, config.balance.cost);
           session.send(`回答错误，积分 -${config.balance.cost}`);
-        }
+        } else session.send(`回答错误，你的积分不足。`);
       } else session.send(`很遗憾，回答错误。`);
       if (gameStarted) currentAnswer = `正确答案是：${correctAnswer}`;
       else session.send(`正确答案是：${correctAnswer}`);

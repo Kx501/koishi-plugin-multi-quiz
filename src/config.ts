@@ -33,7 +33,7 @@ export const Config: Schema<Config> = Schema.intersect([
             Schema.union([
                 Schema.object({
                     enable: Schema.const(true).required(),
-                    gain: Schema.number().default(5).description('奖励额度'),
+                    gain: Schema.number().default(6).description('奖励额度'),
                     cost: Schema.number().default(2).description('惩罚额度'),
                 }),
                 Schema.object({}),
