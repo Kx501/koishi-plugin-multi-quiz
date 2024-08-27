@@ -109,7 +109,10 @@ export function apply(ctx: Context, config: Config) {
 
       timer = setTimeout(() => {
         session.send('时间到，没有人回答正确。');
-        session.send(currentAnswer);
+        if (currentAnswer !== null) {
+          session.send(currentAnswer);
+          currentAnswer = null;
+        }
         gameStarted = false;
       }, timeout);
     });
