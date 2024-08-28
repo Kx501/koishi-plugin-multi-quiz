@@ -276,6 +276,7 @@ export function apply(ctx: Context, config: Config) {
           role: 'user',
           content: `脑筋急转弯：${question.list[0].quest}\n参考答案：${question.list[0].result}\n用户回答：${userAnswer}`
         }])
+        log.debug(`脑筋急转弯：${question.list[0].quest}\n参考答案：${question.list[0].result}\n用户回答：${userAnswer}\nGPT回答：${dvcTXT}`);
         if (dvcTXT === 'True') isCorrect = true;
       } else throw new Error('请先安装dvc服务');
     }
