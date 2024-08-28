@@ -1,4 +1,4 @@
-import { capitalize, Context, Random, Session, sleep } from 'koishi'
+import { capitalize, Context, Random, Session } from 'koishi'
 import { Config, log } from './config'
 import { formatQuestion } from './utils'
 import { } from 'koishi-plugin-monetary'
@@ -86,7 +86,7 @@ export function apply(ctx: Context, config: Config) {
       else return '会话超时';
     });
 
-  ctx.command('quiz').subcommand('buzz', '开始抢答')
+  ctx.command('quiz').subcommand('buzz', '多人抢答模式')
     .alias('抢答')
     .action(async ({ session }) => {
       if (gameStarted) return '抢答游戏已经在进行中，请等待当前游戏结束。';

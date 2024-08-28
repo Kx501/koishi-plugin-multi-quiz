@@ -33,7 +33,9 @@
         "http"
       ],
       "optional": [
-        "monetary"
+        "monetary",
+        "database",
+        "dvc"
       ]
     },
     "preview": true,
