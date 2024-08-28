@@ -94,7 +94,9 @@ export function apply(ctx: Context, config: Config) {
       startBuzzGame(session);
     });
 
+  // 下一题
   function startBuzzGame(session: Session) {
+    gameStarted = true; // 修复false
     const randomType = Random.pick(questionL);
     fetchQuestion(randomType).then(question => {
       if (!question) {
@@ -124,7 +126,7 @@ export function apply(ctx: Context, config: Config) {
       if (!gameStarted || !currentQuestion) return '当前没有进行中的抢答游戏。';
       const isCorrect = await verifyAnswer(session, currentType, currentQuestion, answer);
       if (isCorrect) {
-        clearTimeout(timer);
+        clearTimeout(timer);  // 这里会修改状态为false，实际为true
         // 进入下一次循环
         startBuzzGame(session);
       }
