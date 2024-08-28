@@ -22,11 +22,12 @@ export function apply(ctx: Context, config: Config) {
 
   let callCounts = {};
   let apiKeys = {};
-  let currentQuestion = null;
-  let currentType = null;
-  let currentAnswer = null;
-  let gameStarted = false;
-  let timer = null;
+  let currentQuestion = {};
+  let currentType = {};
+  let currentAnswer = {};
+  let gameStarted = {};
+  let timer = {};
+  let answering = {};
 
   config.keysDict.forEach((entry, index) => {
     entry.questionTypes.forEach(type => {
@@ -89,33 +90,34 @@ export function apply(ctx: Context, config: Config) {
   ctx.command('quiz').subcommand('buzz', '多人抢答模式')
     .alias('抢答')
     .action(async ({ session }) => {
-      if (gameStarted) return '抢答游戏已经在进行中，请等待当前游戏结束。';
-      gameStarted = true;
+      const channelId = session.channelId;
+      if (gameStarted[channelId]) return '抢答游戏已经在进行中，请等待当前游戏结束。';
+      gameStarted[channelId] = true;
       startBuzzGame(session);
     });
 
   // 下一题
   function startBuzzGame(session: Session) {
-    gameStarted = true; // 修复false
+    const channelId = session.channelId;
+    gameStarted[channelId] = true; // 修复false
     const randomType = Random.pick(questionL);
     fetchQuestion(randomType).then(question => {
       if (!question) {
-        gameStarted = false;
+        gameStarted[channelId] = false;
         session.send('暂时没有可用的题目，请稍后再试。');
         return;
       }
-
-      currentQuestion = question;
-      currentType = randomType;
+      currentQuestion[channelId] = question;
+      currentType[channelId] = randomType;
       session.send(formatQuestion(randomType, question));
 
-      timer = setTimeout(() => {
+      timer[channelId] = setTimeout(() => {
         session.send('时间到，没有人回答正确。');
-        if (currentAnswer !== null) {
-          session.send(currentAnswer);
-          currentAnswer = null;
+        if (currentAnswer[channelId] !== null) {
+          session.send(currentAnswer[channelId]);
+          currentAnswer[channelId] = null; // 由于只在答题时才会刷新答案，所以需要清除超时前一次的答案
         }
-        gameStarted = false;
+        gameStarted[channelId] = false;
       }, timeout);
     });
   }
@@ -123,10 +125,16 @@ export function apply(ctx: Context, config: Config) {
   ctx.command('quiz').subcommand('answer <answer>', '抢答答题')
     .alias('答')
     .action(async ({ session }, answer) => {
-      if (!gameStarted || !currentQuestion) return '当前没有进行中的抢答游戏。';
-      const isCorrect = await verifyAnswer(session, currentType, currentQuestion, answer);
+      const channelId = session.channelId;
+      if (!gameStarted[channelId] || !currentQuestion[channelId]) return '当前没有进行中的抢答游戏。';
+      if (answering[channelId]) return;
+
+      answering[channelId] = true; // 尝试修复两次极短时间的回答
+      const isCorrect = await verifyAnswer(session, currentType[channelId], currentQuestion[channelId], answer);
+      answering[channelId] = false;
+
       if (isCorrect) {
-        clearTimeout(timer);  // 这里会修改状态为false，实际为true
+        clearTimeout(timer[channelId]);  // 这里会修改状态为false，实际为true
         // 进入下一次循环
         startBuzzGame(session);
       }
@@ -305,7 +313,8 @@ export function apply(ctx: Context, config: Config) {
           session.send(`回答错误，积分 -${config.balance.cost}`);
         } else session.send(`回答错误，你的积分不足。`);
       } else session.send(`很遗憾，回答错误。`);
-      if (gameStarted) currentAnswer = `正确答案是：${correctAnswer}`;
+      const channelId = session.channelId;
+      if (gameStarted[channelId]) currentAnswer[channelId] = `正确答案是：${correctAnswer}`;
       else session.send(`正确答案是：${correctAnswer}`);
     }
 

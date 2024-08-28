@@ -1,7 +1,7 @@
 {
   "name": "@kx501/koishi-plugin-multi-quiz",
   "description": "api答题，包括：诗词、成语、谜语、字谜、灯谜、脑筋急转弯、广告......，",
-  "version": "1.0.3",
+  "version": "1.0.4-beta2",
   "main": "lib/index.js",
   "typings": "lib/index.d.ts",
   "files": [
