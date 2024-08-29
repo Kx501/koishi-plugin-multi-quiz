@@ -315,7 +315,7 @@ export function apply(ctx: Context, config: Config) {
         } else session.send(`回答错误，你的积分不足。`);
       } else session.send(`很遗憾，回答错误。`);
       const channelId = session.channelId;
-      if (gameStarted[channelId]) currentAnswer[channelId] = `正确答案是：${correctAnswer}`;
+      if (gameStarted[channelId] !== null) currentAnswer[channelId] = `正确答案是：${correctAnswer}`;
       else session.send(`正确答案是：${correctAnswer}`);
     }
 
