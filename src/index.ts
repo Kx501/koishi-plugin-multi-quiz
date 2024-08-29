@@ -92,7 +92,6 @@ export function apply(ctx: Context, config: Config) {
     .action(async ({ session }) => {
       const channelId = session.channelId;
       if (gameStarted[channelId]) return '抢答游戏已经在进行中，请等待当前游戏结束。';
-      gameStarted[channelId] = true;
       startBuzzGame(session);
     });
 
@@ -110,14 +109,11 @@ export function apply(ctx: Context, config: Config) {
       currentQuestion[channelId] = question;
       currentType[channelId] = randomType;
       session.send(formatQuestion(randomType, question));
-
+      // 一直错误或超时，被取消时回调函数不会执行
       timer[channelId] = setTimeout(() => {
         session.send('时间到，没有人回答正确。');
-        if (currentAnswer[channelId] !== null) {
-          session.send(currentAnswer[channelId]);
-          currentAnswer[channelId] = null; // 由于只在答题时才会刷新答案，所以需要清除超时前一次的答案
-        }
         gameStarted[channelId] = false;
+        if (currentAnswer[channelId] !== null) session.send(currentAnswer[channelId]);
       }, timeout);
     });
   }
@@ -133,7 +129,9 @@ export function apply(ctx: Context, config: Config) {
       const isCorrect = await verifyAnswer(session, currentType[channelId], currentQuestion[channelId], answer);
       answering[channelId] = false;
 
-      if (isCorrect) {
+      if (isCorrect || answer === '不知道') {  // ‘不知道’放在这里会在验证时刷新答案
+        if (answer === '不知道') session.send(currentAnswer[channelId]);
+        currentAnswer[channelId] = null; // 回答正确时不会调用计时的回调函数，在这里手动清除状态
         clearTimeout(timer[channelId]);  // 这里会修改状态为false，实际为true
         // 进入下一次循环
         startBuzzGame(session);
@@ -315,7 +313,7 @@ export function apply(ctx: Context, config: Config) {
         } else session.send(`回答错误，你的积分不足。`);
       } else session.send(`很遗憾，回答错误。`);
       const channelId = session.channelId;
-      if (gameStarted[channelId] !== null) currentAnswer[channelId] = `正确答案是：${correctAnswer}`;
+      if (gameStarted[channelId]) currentAnswer[channelId] = `正确答案是：${correctAnswer}`;
       else session.send(`正确答案是：${correctAnswer}`);
     }
 
