@@ -261,6 +261,11 @@ export function apply(ctx: Context, config: Config) {
 
 
   async function verifyAnswer(session: Session, type: string, question: any, userAnswer: string) {
+    if (typeof userAnswer !== 'string' || userAnswer.trim() === '') {
+      session.send('请输入有效的答案。');
+      return false;
+    }
+
     let isCorrect = false;
     if (type === '百科' || type === '诗趣') userAnswer = capitalize(userAnswer);
 
