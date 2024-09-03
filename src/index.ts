@@ -79,14 +79,12 @@ export function apply(ctx: Context, config: Config) {
     while (answerQueue.length > 0) {
       const { session, type, question, userAnswer } = answerQueue.shift();
 
-      try {
-        const isCorrect = await verifyAnswer(session, type, question, userAnswer);
-        if (isCorrect || userAnswer === '不知道') {  // ‘不知道’放在这里会在验证时刷新答案
-          if (userAnswer === '不知道') session.send(currentAnswer[channelId]);
-          currentAnswer[channelId] = null; // 回答正确时不会调用计时的回调函数，在这里手动清除状态
-          clearTimeout(timer[channelId]);  // 这里会修改状态为false，正确情况应该为true
-          if(gameStarted[channelId] === false) startBuzzGame(session);  // 尝试修复同时回答
-        }
+      const isCorrect = await verifyAnswer(session, type, question, userAnswer);
+      if (isCorrect || userAnswer === '不知道') {  // ‘不知道’放在这里会在验证时刷新答案
+        if (userAnswer === '不知道') session.send(currentAnswer[channelId]);
+        currentAnswer[channelId] = null; // 回答正确时不会调用计时的回调函数，在这里手动清除状态
+        clearTimeout(timer[channelId]);  // 这里会修改状态为false，正确情况应该为true
+        if (gameStarted[channelId] === false) startBuzzGame(session);  // 尝试修复同时回答
       }
     }
   }
