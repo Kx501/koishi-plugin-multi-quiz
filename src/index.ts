@@ -27,7 +27,6 @@ export function apply(ctx: Context, config: Config) {
   let currentAnswer = {};
   let gameStarted = {};
   let timer = {};
-  let processingAnswer = false;
   const answerQueue = [];
 
   config.keysDict.forEach((entry, index) => {
@@ -78,9 +77,6 @@ export function apply(ctx: Context, config: Config) {
 
   async function processAnswerQueue(channelId: string) {
     while (answerQueue.length > 0) {
-      if (processingAnswer) return;
-
-      processingAnswer = true;
       const { session, type, question, userAnswer } = answerQueue.shift();
 
       try {
@@ -89,10 +85,8 @@ export function apply(ctx: Context, config: Config) {
           if (userAnswer === '不知道') session.send(currentAnswer[channelId]);
           currentAnswer[channelId] = null; // 回答正确时不会调用计时的回调函数，在这里手动清除状态
           clearTimeout(timer[channelId]);  // 这里会修改状态为false，正确情况应该为true
-          startBuzzGame(session);
+          if(gameStarted[channelId] === false) startBuzzGame(session);  // 尝试修复同时回答
         }
-      } finally {
-        processingAnswer = false;
       }
     }
   }
