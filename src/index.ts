@@ -27,7 +27,8 @@ export function apply(ctx: Context, config: Config) {
   let currentAnswer = {};
   let gameStarted = {};
   let timer = {};
-  let answering = {};
+  let processingAnswer = false;
+  const answerQueue = [];
 
   config.keysDict.forEach((entry, index) => {
     entry.questionTypes.forEach(type => {
@@ -74,6 +75,23 @@ export function apply(ctx: Context, config: Config) {
     throw new Error(`API error: ${response.msg}`);
   }
 
+  async function processAnswerQueue() {
+    if (processingAnswer || answerQueue.length === 0) return;
+
+    processingAnswer = true;
+    const { session, type, question, userAnswer } = answerQueue.shift();
+
+    try {
+      const isCorrect = await verifyAnswer(session, type, question, userAnswer);
+      if (isCorrect || userAnswer === '不知道') {
+        startBuzzGame(session);
+      }
+    } finally {
+      processingAnswer = false;
+      processAnswerQueue(); // 处理下一个回答
+    }
+  }
+
 
   ctx.command('quiz', '随机答题')
     .alias('答题')
@@ -87,12 +105,14 @@ export function apply(ctx: Context, config: Config) {
       else return '会话超时';
     });
 
-  ctx.command('quiz').subcommand('buzz', '多人抢答模式')
-    .alias('抢答')
-    .action(async ({ session }) => {
+  ctx.command('quiz').subcommand('answer <answer>', '抢答答题')
+    .alias('答')
+    .action(async ({ session }, answer) => {
       const channelId = session.channelId;
-      if (gameStarted[channelId]) return '抢答游戏已经在进行中，请等待当前游戏结束。';
-      startBuzzGame(session);
+      if (!gameStarted[channelId] || !currentQuestion[channelId]) return '当前没有进行中的抢答游戏。';
+
+      answerQueue.push({ session, type: currentType[channelId], question: currentQuestion[channelId], userAnswer: answer });
+      processAnswerQueue();
     });
 
   // 下一题
@@ -123,11 +143,8 @@ export function apply(ctx: Context, config: Config) {
     .action(async ({ session }, answer) => {
       const channelId = session.channelId;
       if (!gameStarted[channelId] || !currentQuestion[channelId]) return '当前没有进行中的抢答游戏。';
-      if (answering[channelId]) return;
 
-      answering[channelId] = true; // 尝试修复两次极短时间的回答
       const isCorrect = await verifyAnswer(session, currentType[channelId], currentQuestion[channelId], answer);
-      answering[channelId] = false;
 
       if (isCorrect || answer === '不知道') {  // ‘不知道’放在这里会在验证时刷新答案
         if (answer === '不知道') session.send(currentAnswer[channelId]);
