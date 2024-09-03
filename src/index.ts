@@ -46,9 +46,7 @@ export function apply(ctx: Context, config: Config) {
     const keys = apiKeys[type];
 
     if (keys.length === 0) return null; // 跳过为空的列表
-
     let index = counts.findIndex((count: number) => count < MAX_CALLS);
-
     if (index === -1) return null; // 跳过所有 key 达到上限的类型
 
     let url: string;
@@ -70,6 +68,9 @@ export function apply(ctx: Context, config: Config) {
 
     if (response.code === 200) {
       counts[index]++;
+
+      log.debug('响应的结果是', response.result);
+
       return response.result;
     } else if (response.code === 150) counts[index] = MAX_CALLS;
     throw new Error(`API error: ${response.msg}`);
@@ -280,6 +281,7 @@ export function apply(ctx: Context, config: Config) {
       return false;
     }
 
+    // 验证答案
     let isCorrect = false;
     if (type === '百科' || type === '诗趣') userAnswer = capitalize(userAnswer);
 
@@ -303,6 +305,9 @@ export function apply(ctx: Context, config: Config) {
       isCorrect = userAnswer === (type === '竞答' ? question.result : question.answer);
     }
 
+    log.debug('验证后的结果是', question);
+
+    // 解释以及积分
     if (isCorrect) {
       if (ctx.monetary && config.balance?.enable) {
         let userAid: number;
@@ -310,8 +315,7 @@ export function apply(ctx: Context, config: Config) {
         ctx.monetary.gain(userAid, config.balance.gain);
         session.send(`恭喜你，回答正确！积分 +${config.balance.gain}`);
       } else session.send('恭喜你，回答正确！');
-    }
-    else {
+    } else {
       let correctAnswer = question.answer;
       if (type === '诗趣') correctAnswer = `${question.answer}\n【解析】: ${question.analytic}`;
       else if (type === '竞答') correctAnswer = question.result;
@@ -332,8 +336,9 @@ export function apply(ctx: Context, config: Config) {
         } else session.send(`回答错误，你的积分不足。`);
       } else session.send(`很遗憾，回答错误。`);
       const channelId = session.channelId;
-      if (gameStarted[channelId]) currentAnswer[channelId] = `正确答案是：${correctAnswer}`;
-      else session.send(`正确答案是：${correctAnswer}`);
+      if (gameStarted[channelId]) currentAnswer[channelId] = `正确答案是：${correctAnswer}`; else session.send(`正确答案是：${correctAnswer}`);
+
+      log.debug('格式化后的答案是：', currentAnswer[channelId]);
     }
 
     return isCorrect;
