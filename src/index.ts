@@ -3,7 +3,7 @@ import { Config, log } from './config'
 import { formatQuestion } from './utils'
 import { } from 'koishi-plugin-monetary'
 import { } from 'koishi-plugin-davinci-003'
-import { questionL } from './list';
+import { apiEndpoints, questionL } from './list';
 
 export const inject = {
   required: ['http'],
@@ -50,18 +50,11 @@ export function apply(ctx: Context, config: Config) {
 
     let url: string;
 
-    if (type === '诗趣') url = `https://apis.tianapi.com/scwd/index?key=${keys[index]}`;
-    else if (type === '百科') url = `https://apis.tianapi.com/baiketiku/index?key=${keys[index]}`;
-    else if (type === '竞答') url = `https://apis.tianapi.com/wenda/index?key=${keys[index]}`;
-    else if (type === '判断') url = `https://apis.tianapi.com/decide/index?key=${keys[index]}`;
-    else if (type === '填诗') url = `https://apis.tianapi.com/duishici/index?key=${keys[index]}`;
-    else if (type === '成语') url = `https://apis.tianapi.com/caichengyu/index?key=${keys[index]}`;
-    else if (type === '谜语') url = `https://apis.tianapi.com/riddle/index?key=${keys[index]}`;
-    else if (type === '灯谜') url = `https://apis.tianapi.com/caizimi/index?key=${keys[index]}`;
-    else if (type === '字谜') url = `https://apis.tianapi.com/zimi/index?key=${keys[index]}`;
-    else if (type === '烧脑') url = `https://apis.tianapi.com/naowan/index?key=${keys[index]}`;
-    else if (type === '广告') url = `https://apis.tianapi.com/slogan/index?key=${keys[index]}`;
-    else throw new Error(`Unknown question type: ${type}`);
+    // 使用 apiEndpoints 动态生成 URL
+    const typeInfo = apiEndpoints.find(q => q.type === type);
+    if (!typeInfo) throw new Error(`Unknown question type: ${type}`);
+
+    url = `https://apis.tianapi.com/${typeInfo.endpoint}/index?key=${keys[index]}`;
 
     const response = (await ctx.http('POST', url)).data;
 
@@ -272,7 +265,7 @@ export function apply(ctx: Context, config: Config) {
     if (type === '百科' || type === '诗趣') userAnswer = capitalize(userAnswer);
 
     if (type === '判断') isCorrect = (userAnswer === '对' && question.answer === 1) || (userAnswer === '错' && question.answer === 0);
-    else if (type === '烧脑') {
+    else if (config.dvcQuestionTypes.includes(type)) { // 使用 dvc 服务进行验证
       if (ctx.dvc) {
         let dvcTXT = await ctx.dvc.chat_with_gpt([{
           role: 'system',
@@ -284,10 +277,8 @@ export function apply(ctx: Context, config: Config) {
         log.debug(`脑筋急转弯：${question.list[0].quest}\n参考答案：${question.list[0].result}\n用户回答：${userAnswer}\nGPT回答：${dvcTXT}`);
         if (dvcTXT === 'True') isCorrect = true;
       } else throw new Error('请先安装dvc服务');
-    }
-    else {
-      const standardTypes = ['诗趣', '百科', '竞答', '填诗', '成语', '谜语', '灯谜', '字谜', '广告'];
-      if (!standardTypes.includes(type)) throw new Error(`Unknown question type: ${type}`);
+    } else {
+      if (!questionL.includes(type)) throw new Error(`Unknown question type: ${type}`);
       isCorrect = userAnswer === (type === '竞答' ? question.result : question.answer);
     }
 

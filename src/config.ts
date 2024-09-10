@@ -4,18 +4,19 @@ import { questionL } from "./list";
 export const log = new Logger('multi-quiz')
 
 export interface Config {
-    maxCall: number
-    timeout: number
+    maxCall: number;
+    timeout: number;
     keysDict: {
-        key: string
-        questionTypes: string[]
-    }[]
+        key: string;
+        questionTypes: string[];
+    }[];
     balance: {
-        enable?: boolean
-        gain?: number
-        cost?: number
-    }
-    dvcrole: string
+        enable?: boolean;
+        gain?: number;
+        cost?: number;
+    };
+    dvcrole: string;
+    dvcQuestionTypes: string[]; // 新增字段
 }
 
 export const Config: Schema<Config> = Schema.intersect([
@@ -39,6 +40,7 @@ export const Config: Schema<Config> = Schema.intersect([
                 Schema.object({}),
             ]),
         ]),
-        dvcrole: Schema.string().role('textarea', { rows: [2, 8] }).default('请判断下面用户的回答是否正确，只用回答‘True’或‘False’不要说多余的话').description('dvc角色')
+        dvcrole: Schema.string().role('textarea', { rows: [2, 8] }).default('请判断下面用户的回答是否正确，只用回答‘True’或‘False’不要说多余的话').description('dvc角色'),
+        dvcQuestionTypes: Schema.array(Schema.union(questionL)).role('select').default(['烧脑']).description('需要使用dvc服务的题型') // 新增字段
     }).description('基础设置')
-])
+]);
