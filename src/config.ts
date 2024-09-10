@@ -6,6 +6,7 @@ export const log = new Logger('multi-quiz')
 export interface Config {
     maxCall: number;
     timeout: number;
+    delay: number;
     keysDict: {
         key: string;
         questionTypes: string[];
@@ -23,6 +24,7 @@ export const Config: Schema<Config> = Schema.intersect([
     Schema.object({
         maxCall: Schema.number().default(100).description('每个key最大调用次数'),
         timeout: Schema.number().default(40000).description('回答限时'),
+        delay: Schema.number().default(200).description('每次调用间隔'),
         keysDict: Schema.array(Schema.object({
             key: Schema.string(),
             questionTypes: Schema.array(Schema.union(questionL)).role('select').default(questionL).description('选择的题型'),

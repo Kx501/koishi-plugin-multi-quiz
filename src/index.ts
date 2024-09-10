@@ -19,6 +19,7 @@ export const usage = `接口使用：[天聚数行](https://www.tianapi.com/)\n
 export function apply(ctx: Context, config: Config) {
   const MAX_CALLS = config.maxCall;
   const timeout = config.timeout;
+  const bufferTime = config.delay; // 缓冲时间，单位为毫秒
 
   let callCounts = {};
   let apiKeys = {};
@@ -27,7 +28,7 @@ export function apply(ctx: Context, config: Config) {
   let currentAnswer = {};
   let gameStarted = {};
   let timer = {};
-  const answerQueue = [];
+  let lastRequestTime = {};
 
   config.keysDict.forEach((entry, index) => {
     entry.questionTypes.forEach(type => {
@@ -89,30 +90,44 @@ export function apply(ctx: Context, config: Config) {
     });
 
   // 下一题
-  function startBuzzGame(session: Session) {
+  async function startBuzzGame(session: Session) {
     const channelId = session.channelId;
-    gameStarted[channelId] = true; // 修复false
+    const now = Date.now();
+
+    // 检查上一次请求的时间间隔
+    if (lastRequestTime[channelId] && now - lastRequestTime[channelId] < bufferTime) {
+      return; // 如果时间间隔过短，直接返回
+    }
+
+    lastRequestTime[channelId] = now; // 更新上一次请求的时间
+    gameStarted[channelId] = true;
     const randomType = Random.pick(questionL);
-    fetchQuestion(randomType).then(question => {
-      if (!question) {
-        gameStarted[channelId] = false;
-        session.send('暂时没有可用的题目，请稍后再试。');
-        return;
+    const question = await fetchQuestion(randomType);
+    if (!question) {
+      gameStarted[channelId] = false;
+      session.send('暂时没有可用的题目，请稍后再试。');
+      return;
+    }
+    currentQuestion[channelId] = question;
+    currentType[channelId] = randomType;
+    session.send(formatQuestion(randomType, question));
+
+    // 清除之前的计时器
+    if (timer[channelId]) {
+      clearTimeout(timer[channelId]);
+    }
+
+    // 设置新的计时器
+    timer[channelId] = setTimeout(() => {
+      session.send('时间到，没有人回答正确。');
+      gameStarted[channelId] = false;
+      if (currentAnswer[channelId] !== null) {
+        session.send(currentAnswer[channelId]);
+        currentAnswer[channelId] = null;
       }
-      currentQuestion[channelId] = question;
-      currentType[channelId] = randomType;
-      session.send(formatQuestion(randomType, question));
-      // 一直错误或超时，被取消时回调函数不会执行
-      timer[channelId] = setTimeout(() => {
-        session.send('时间到，没有人回答正确。');
-        gameStarted[channelId] = false;
-        if (currentAnswer[channelId] !== null) {
-          session.send(currentAnswer[channelId]);
-          currentAnswer[channelId] = null;
-        }
-      }, timeout);
-    });
+    }, timeout);
   }
+
 
   ctx.command('quiz').subcommand('answer <answer>', '抢答答题')
     .alias('答')
@@ -125,9 +140,7 @@ export function apply(ctx: Context, config: Config) {
       if (isCorrect || answer === '不知道') {  // ‘不知道’放在这里会在验证时刷新答案
         if (answer === '不知道') session.send(currentAnswer[channelId]);
         currentAnswer[channelId] = null; // 回答正确时不会调用计时的回调函数，在这里手动清除状态
-        clearTimeout(timer[channelId]);  // 这里会修改状态为false，实际为true
         // 进入下一次循环
-        while (currentAnswer[channelId] !== null); // 尝试修复两次极短时间的回答
         startBuzzGame(session);
       }
     });
