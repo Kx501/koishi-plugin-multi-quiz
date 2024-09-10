@@ -279,19 +279,24 @@ export function apply(ctx: Context, config: Config) {
 
     if (type === '判断') isCorrect = (userAnswer === '对' && question.answer === 1) || (userAnswer === '错' && question.answer === 0);
     else if (config.dvcQuestionTypes.includes(type)) { // 使用 dvc 服务进行验证
-      if (ctx.dvc) {
-        let dvcTXT = await ctx.dvc.chat_with_gpt([{
-          role: 'system',
-          content: `${config.dvcrole}`
-        }, {
-          role: 'user',
-          content: `脑筋急转弯：${question.list[0].quest}\n参考答案：${question.list[0].result}\n用户回答：${userAnswer}`
-        }])
-        log.debug(`脑筋急转弯：${question.list[0].quest}\n参考答案：${question.list[0].result}\n用户回答：${userAnswer}\nGPT回答：${dvcTXT}`);
-        if (dvcTXT === 'True') isCorrect = true;
-      } else throw new Error('请先安装dvc服务');
+      let content: string;
+      if (type === '烧脑') {
+        content = `${type}：${question.list[0].quest}\n参考答案：${question.list[0].result}\n用户回答：${userAnswer}`
+      } else if (type === '竞答') {
+        content = `${type}：${question.quest}\n参考答案：${question.result}\n用户回答：${userAnswer}`
+      } else {
+        content = `${type}：${question.quest}\n参考答案：${question.answer}\n用户回答：${userAnswer}`
+      }
+      let dvcTXT = await ctx.dvc.chat_with_gpt([{
+        role: 'system',
+        content: `${config.dvcrole}`
+      }, {
+        role: 'user',
+        content: content
+      }])
+      log.debug(`${content}\nGPT回答：${dvcTXT}`);
+      if (dvcTXT === 'True') isCorrect = true;
     } else {
-      if (!questionL.includes(type)) throw new Error(`Unknown question type: ${type}`);
       isCorrect = userAnswer === (type === '竞答' ? question.result : question.answer);
     }
 
@@ -328,7 +333,7 @@ export function apply(ctx: Context, config: Config) {
       const channelId = session.channelId;
       if (gameStarted[channelId]) currentAnswer[channelId] = `正确答案是：${correctAnswer}`; else session.send(`正确答案是：${correctAnswer}`);
 
-      log.debug('格式化后的答案是：', currentAnswer[channelId]);
+      // log.debug('格式化后的答案是：', currentAnswer[channelId]);  // 单题有问题
     }
 
     return isCorrect;
